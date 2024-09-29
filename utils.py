@@ -7,7 +7,8 @@ def extract_and_format_date(url):
   match = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', url)
   if match:
     year, month, day = match.groups()
-    return f"{day}.{month}.{year}"
+    # return f"{day}.{month}.{year}"
+    return f"{year}-{month}-{day}"
   return None
 
 def is_valid_image(img_str):
@@ -48,3 +49,16 @@ async def scroll_to_bottom(page, step=1000, wait_time=1):
     if new_height == current_height:  # Если высота больше не меняется, значит достигли низа страницы
       break
     current_height = new_height
+
+def format_tags(tags_string):
+  # Разбиваем строку на отдельные теги, убираем пробелы и запятые
+  tags = re.split(r',\s*|\s+', tags_string.strip())
+  
+  # Удаляем пустые элементы из списка, если такие имеются
+  tags = [tag for tag in tags if tag]
+
+  # Форматируем каждый тег в #CamelCase
+  formatted_tags = ['#' + ''.join(word.capitalize() for word in tag.split()) for tag in tags]
+  
+  # Объединяем все хештеги в одну строку
+  return ' '.join(formatted_tags)

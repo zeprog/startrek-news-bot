@@ -35,7 +35,8 @@ conn.commit()
 news_sites = [
     'https://treknews.net/category/news/',
     'https://www.dailystartreknews.com/',
-    'https://www.startrek.com/en-un/category/news'
+    'https://www.startrek.com/en-un/category/news',
+    'https://trekmovie.com/'
 ]
 
 async def send_base64_image(img_str, caption):
@@ -74,7 +75,6 @@ async def send_photo_with_retry(photo, caption, retries=3, delay=10):
 
 def format_date(date_str):
   try:
-    print(date_str)
     date_obj = parser.parse(date_str)
     return date_obj.strftime("%Y-%m-%d") 
   except ValueError as e:
@@ -96,6 +96,8 @@ async def fetch_news_from_site(site):
       news_list = await process_dailystartreknews(page)
     elif 'startrek.com' in site:
       news_list = await process_startrek(page)
+    elif 'trekmovie.com' in site:
+      news_list = await process_trekmovie(page)
 
     await context.close()
     await browser.close()
@@ -298,6 +300,40 @@ async def process_startrek(page):
         else:
           print(f"Дата не найдена для статьи: {link}")
 
+  return news_list
+
+async def process_trekmovie(page):
+  await scroll_to_bottom(page)
+  news_items = await page.query_selector_all('.clearfix article')
+  news_list = []
+
+  for item in news_items:
+    title_element = await item.query_selector('h3 a')
+    link_element = title_element
+    img_element = await item.query_selector('.content-thumb a img')
+    hashtag_elements = await item.query_selector_all('.entry-meta-cats a')
+    date_element = await item.query_selector('.entry-meta-date')
+
+    if title_element and link_element and img_element and hashtag_elements and date_element:
+      title = await title_element.inner_text()
+      link = await link_element.get_attribute('href')
+      img = await img_element.get_attribute('src')
+      hashtags = ', '.join([await tag.inner_text() for tag in hashtag_elements])
+      formatted_hashtags = f'#News {format_tags(hashtags)}'
+      date = await date_element.inner_text()
+      date = date.strip(' |')
+      date = format_date(date)
+
+      news_list.append({
+        'title': title,
+        'link': link,
+        'img': img,
+        'date': date,
+        'hashtag': formatted_hashtags
+      })
+    else:
+      print("Не все элементы найдены для одной новости.")
+      print(f"Title Element: {title_element}, Link Element: {link_element}, Img Element: {img_element}, Hashtag Elements: {hashtag_elements}, Date Element: {date_element}")
   return news_list
 
 async def main():

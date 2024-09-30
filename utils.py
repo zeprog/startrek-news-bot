@@ -51,14 +51,12 @@ async def scroll_to_bottom(page, step=1000, wait_time=1):
     current_height = new_height
 
 def format_tags(tags_string):
-  # Разбиваем строку на отдельные теги, убираем пробелы и запятые
-  tags = re.split(r',\s*|\s+', tags_string.strip())
+  tags = [tag.strip() for tag in tags_string.split(',')]
   
-  # Удаляем пустые элементы из списка, если такие имеются
-  tags = [tag for tag in tags if tag]
-
-  # Форматируем каждый тег в #CamelCase
-  formatted_tags = ['#' + ''.join(word.capitalize() for word in tag.split()) for tag in tags]
+  formatted_tags = []
+  for tag in tags:
+    tag = tag.replace(':', '')
+    formatted_tag = '#' + ''.join(word.capitalize() for word in tag.split())
+    formatted_tags.append(formatted_tag)
   
-  # Объединяем все хештеги в одну строку
   return ' '.join(formatted_tags)

@@ -33,10 +33,11 @@ cursor.execute("CREATE INDEX IF NOT EXISTS idx_date ON news (date)")
 conn.commit()
 
 news_sites = [
-    'https://treknews.net/category/news/',
-    'https://www.dailystartreknews.com/',
-    'https://www.startrek.com/en-un/category/news',
-    'https://trekmovie.com/'
+  'https://treknews.net/category/news/',
+  'https://www.dailystartreknews.com/',
+  'https://www.startrek.com/en-un/category/news',
+  'https://trekmovie.com/',
+  'https://blog.trekcore.com/'
 ]
 
 async def send_base64_image(img_str, caption):
@@ -84,7 +85,7 @@ def format_date(date_str):
 async def fetch_news_from_site(site):
   news_list = []
   async with async_playwright() as p:
-    browser = await p.chromium.launch(headless=False)
+    browser = await p.chromium.launch(headless=True)
     context = await browser.new_context()
     page = await context.new_page()
     await page.goto(site, timeout=60000)
@@ -98,6 +99,8 @@ async def fetch_news_from_site(site):
       news_list = await process_startrek(page)
     elif 'trekmovie.com' in site:
       news_list = await process_trekmovie(page)
+    elif 'trekcore.com' in site:
+      news_list = await process_trekcore(page)
 
     await context.close()
     await browser.close()
@@ -334,6 +337,38 @@ async def process_trekmovie(page):
     else:
       print("Не все элементы найдены для одной новости.")
       print(f"Title Element: {title_element}, Link Element: {link_element}, Img Element: {img_element}, Hashtag Elements: {hashtag_elements}, Date Element: {date_element}")
+  return news_list
+
+async def process_trekcore(page):
+  await scroll_to_bottom(page)
+  news_items = await page.query_selector_all('#tdi_44 .td-cpt-post')
+  news_list = []
+
+  for item in news_items:
+    title_element = await item.query_selector('.td-module-meta-info h3 a')
+    link_element = title_element
+    image_element = await item.query_selector('.td-module-thumb span')
+    hashtag_element = await item.query_selector('.td-post-category')
+    date_element = await item.query_selector('.td-post-date time')
+
+    if title_element and link_element and image_element and hashtag_element and date_element:
+      title = await title_element.inner_text()
+      link = await link_element.get_attribute('href')
+      img = await image_element.get_attribute('data-img-url')
+      hashtag = await hashtag_element.inner_html()
+      formatted_hashtags = f'#News {format_tags(hashtag)}'
+      date = format_date(await date_element.get_attribute('datetime'))
+
+      news_list.append({
+        'title': title,
+        'link': link,
+        'img': img,
+        'date': date,
+        'hashtag': formatted_hashtags
+      })
+    else:
+      print("Не все элементы найдены для одной новости.")
+      print(f"Title Element: {title_element}, Link Element: {link_element}, Img Element: {image_element}, Hashtag Elements: {hashtag_element}, Date Element: {date_element}")
   return news_list
 
 async def main():

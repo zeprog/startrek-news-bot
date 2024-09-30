@@ -1,4 +1,4 @@
 __pycache__
 venv
-config.py
+.env
 news.db

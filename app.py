@@ -17,7 +17,10 @@ storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
 latest_news_links = set()
-conn = sqlite3.connect('news.db')
+db_dir = '/app/db'
+os.makedirs(db_dir, exist_ok=True)
+db_path = os.path.join(db_dir, 'news.db')
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 cursor.execute('''CREATE TABLE IF NOT EXISTS news (
@@ -243,18 +246,35 @@ async def process_startrek(page):
 
   months = {
     'янв.': '01',
+    'Jan': '01',
     'фев.': '02',
+    'Feb': '02',
     'мар.': '03',
+    'March': '03',
+    'Mar': '03',
     'апр.': '04',
+    'Apr': '04',
+    'April': '04',
     'май': '05',
+    'May': '05',
     'июн.': '06',
+    'Jun': '06',
+    'June': '06',
     'июл.': '07',
+    'Jul': '07',
+    'July': '07',
     'авг.': '08',
+    'Aug': '08',
+    'August': '08',
     'сен.': '09',
     'сент.': '09',
+    'Sep': '09',
     'окт.': '10',
+    'Oct': '10',
     'нояб.': '11',
-    'дек.': '12'
+    'Nov': '11',
+    'дек.': '12',
+    'Dec': '12'
   }
 
   for item in news_items:
@@ -276,7 +296,7 @@ async def process_startrek(page):
       if not exists:  # Если ссылки нет в базе
         # Открываем новую вкладку
         new_page = await page.context.new_page()
-        await new_page.goto(f'https://www.startrek.com{link}', timeout=60000)
+        await new_page.goto(f'https://www.startrek.com{link}', timeout=120000)
 
         # Дождитесь загрузки нужного элемента на новой странице
         await new_page.wait_for_selector('.Article_deemphasized__Pb5VW.Article_publication__QjpzT.paragraph-light')
@@ -285,10 +305,10 @@ async def process_startrek(page):
         if date_element:
           date_parts = await date_element.inner_text()
           date_parts = date_parts.split(' ')  # Разделяем по пробелам
-          
           # Преобразуем дату в нужный формат
-          day = date_parts[1].zfill(2)  # Добавляем ведущий ноль
-          month = months[date_parts[2]]
+          # day = date_parts[1].zfill(2)  # Добавляем ведущий ноль
+          day = date_parts[2].split(',')[0].zfill(2)  # Добавляем ведущий ноль
+          month = months[date_parts[1]]
           year = date_parts[3].replace('г.', '').strip()  # Убираем "г."
           
           formatted_date = f"{year}-{month}-{day}"  # Форматируем в "гггг-мм-дд"

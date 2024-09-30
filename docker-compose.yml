@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    volumes:
+      - .:/app
+      - news:/app/db
+    env_file:
+      - .env
+    mem_limit: 2g
+    ports:
+      - "8000:8000"
+
+volumes:
+  news:
